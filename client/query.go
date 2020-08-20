@@ -126,7 +126,7 @@ type SubQuery struct {
 	// An optional value used to filter the time series emitted in the results.
 	// Note that if no filters are specified, all time series for the given
 	// metric will be aggregated into the results.
-	Fiters []Filter `json:"filters,omitempty"`
+	Filters []Filter `json:"filters,omitempty"`
 }
 
 // Filter is the structure used to hold the filter parameters when calling /api/query.
@@ -149,14 +149,25 @@ type Filter struct {
 	GroupBy bool `json:"groupBy"`
 }
 
+type QueryError struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+	Details string `json:"details"`
+	Trace   string `json:"trace"`
+}
+
+func (e *QueryError) Error() string {
+	return fmt.Sprintf("code=%d,msg=%s", e.Code, e.Message)
+}
+
 // QueryResponse acts as the implementation of Response in the /api/query scene.
 // It holds the status code and the response values defined in the
 // (http://opentsdb.net/docs/build/html/api_http/query/index.html).
 //
 type QueryResponse struct {
 	StatusCode    int
-	QueryRespCnts []QueryRespItem        `json:"queryRespCnts"`
-	ErrorMsg      map[string]interface{} `json:"error"`
+	QueryRespCnts []QueryRespItem `json:"queryRespCnts"`
+	ErrorMsg      QueryError      `json:"error"`
 }
 
 func (queryResp *QueryResponse) String() string {

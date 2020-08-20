@@ -77,8 +77,8 @@ type SubQueryLast struct {
 //
 type QueryLastResponse struct {
 	StatusCode    int
-	QueryRespCnts []QueryRespLastItem    `json:"queryRespCnts,omitempty"`
-	ErrorMsg      map[string]interface{} `json:"error"`
+	QueryRespCnts []QueryRespLastItem `json:"queryRespCnts,omitempty"`
+	ErrorMsg      QueryError          `json:"error"`
 }
 
 func (queryLastResp *QueryLastResponse) String() string {
