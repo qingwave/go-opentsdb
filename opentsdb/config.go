@@ -13,14 +13,14 @@
 // limitations under the License.
 //
 //
-// Package config defines basic structure to hold the configure items used
-// to initialize the opentsdb client.
+// package opentsdb defines the client and the corresponding
+// rest api implementaion of OpenTSDB.
 //
-package config
+// config.go contains the structs and methods for the implementation of /api/config and /api/config/filters.
+//
+package opentsdb
 
-import (
-	"net/http"
-)
+import "net/http"
 
 type OpenTSDBConfig struct {
 

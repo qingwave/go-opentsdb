@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 //
-// Package client defines the client and the corresponding
+// package opentsdb defines the client and the corresponding
 // rest api implementaion of OpenTSDB.
 //
 // Every metric, tag name and tag value is associated with a unique identifier (UID).
@@ -29,7 +29,7 @@
 // uid.go contains the structs and methods for the implementation of
 // /api/uid/tsmeta, /api/uid/assign, /api/uid/uidmeta.
 //
-package client
+package opentsdb
 
 import (
 	"bytes"

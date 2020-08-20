@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 //
-// Package main shows the sample of how to use github.com/bluebreezecf/opentsdbclient/client
+// Package main shows the sample of how to use github.com/opentsdb/opentsdbclient/opentsdb
 // to communicate with the OpenTSDB with the pre-define rest apis.
 // (http://opentsdb.net/docs/build/html/api_http/index.html#api-endpoints)
 //
@@ -24,15 +24,14 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/bluebreezecf/opentsdb-goclient/client"
-	"github.com/bluebreezecf/opentsdb-goclient/config"
+	"github.com/qingwave/go-opentsdb/opentsdb"
 )
 
 func main() {
-	opentsdbCfg := config.OpenTSDBConfig{
+	opentsdbCfg := opentsdb.OpenTSDBConfig{
 		OpentsdbHost: "127.0.0.1:4242",
 	}
-	tsdbClient, err := client.NewClient(opentsdbCfg)
+	tsdbClient, err := opentsdb.NewClient(opentsdbCfg)
 	if err != nil {
 		fmt.Printf("%v\n", err)
 		return
@@ -47,17 +46,17 @@ func main() {
 	name := []string{"cpu", "disk", "net", "mem", "bytes"}
 	//1. POST /api/put
 	fmt.Println("Begin to test POST /api/put.")
-	cpuDatas := make([]client.DataPoint, 0)
+	cpuDatas := make([]opentsdb.DataPoint, 0)
 	st1 := time.Now().Unix()
 	time.Sleep(2 * time.Second)
 	tags := make(map[string]string)
-	tags["host"] = "bluebreezecf-host"
-	tags["try-name"] = "bluebreezecf-sample"
+	tags["host"] = "opentsdb-host"
+	tags["try-name"] = "opentsdb-sample"
 	tags["demo-name"] = "opentsdb-test"
 	i := 0
 	for {
 		time.Sleep(500 * time.Millisecond)
-		data := client.DataPoint{
+		data := opentsdb.DataPoint{
 			Metric:    name[i],
 			Timestamp: time.Now().Unix(),
 			Value:     rand.Float64(),
@@ -83,13 +82,13 @@ func main() {
 	fmt.Println("Begin to test POST /api/query.")
 	time.Sleep(2 * time.Second)
 	st2 := time.Now().Unix()
-	queryParam := client.QueryParam{
+	queryParam := opentsdb.QueryParam{
 		Start: st1,
 		End:   st2,
 	}
-	subqueries := make([]client.SubQuery, 0)
+	subqueries := make([]opentsdb.SubQuery, 0)
 	for _, metric := range name {
-		subQuery := client.SubQuery{
+		subQuery := opentsdb.SubQuery{
 			Aggregator: "sum",
 			Metric:     metric,
 			Tags:       tags,
@@ -107,15 +106,15 @@ func main() {
 	//2.2 POST /api/query/last
 	fmt.Println("Begin to test POST /api/query/last.")
 	time.Sleep(1 * time.Second)
-	subqueriesLast := make([]client.SubQueryLast, 0)
+	subqueriesLast := make([]opentsdb.SubQueryLast, 0)
 	for _, metric := range name {
-		subQueryLast := client.SubQueryLast{
+		subQueryLast := opentsdb.SubQueryLast{
 			Metric: metric,
 			Tags:   tags,
 		}
 		subqueriesLast = append(subqueriesLast, subQueryLast)
 	}
-	queryLastParam := client.QueryLastParam{
+	queryLastParam := opentsdb.QueryLastParam{
 		Queries:      subqueriesLast,
 		ResolveNames: true,
 		BackScan:     24,
@@ -188,9 +187,9 @@ func main() {
 
 	//7. Get /api/suggest
 	fmt.Println("Begin to test GET /api/suggest.")
-	typeValues := []string{client.TypeMetrics, client.TypeTagk, client.TypeTagv}
+	typeValues := []string{opentsdb.TypeMetrics, opentsdb.TypeTagk, opentsdb.TypeTagv}
 	for _, typeItem := range typeValues {
-		sugParam := client.SuggestParam{
+		sugParam := opentsdb.SuggestParam{
 			Type: typeItem,
 		}
 		fmt.Printf("  Send suggest param: %s", sugParam.String())
@@ -226,14 +225,14 @@ func main() {
 	//10. POST /api/annotation
 	fmt.Println("Begin to test POST /api/annotation.")
 	custom := make(map[string]string, 0)
-	custom["owner"] = "bluebreezecf"
-	custom["host"] = "bluebreezecf-host"
+	custom["owner"] = "opentsdb"
+	custom["host"] = "opentsdb-host"
 	addedST := time.Now().Unix()
 	addedTsuid := "000001000001000002"
-	anno := client.Annotation{
+	anno := opentsdb.Annotation{
 		StartTime:   addedST,
 		Tsuid:       addedTsuid,
-		Description: "bluebreezecf test annotation",
+		Description: "opentsdb test annotation",
 		Notes:       "These would be details about the event, the description is just a summary",
 		Custom:      custom,
 	}
@@ -247,8 +246,8 @@ func main() {
 	//11. GET /api/annotation
 	fmt.Println("Begin to test GET /api/annotation.")
 	queryAnnoMap := make(map[string]interface{}, 0)
-	queryAnnoMap[client.AnQueryStartTime] = addedST
-	queryAnnoMap[client.AnQueryTSUid] = addedTsuid
+	queryAnnoMap[opentsdb.AnQueryStartTime] = addedST
+	queryAnnoMap[opentsdb.AnQueryTSUid] = addedTsuid
 	if queryAnnoResp, err := tsdbClient.QueryAnnotation(queryAnnoMap); err != nil {
 		fmt.Printf("Error occurs when acquiring annotation info: %v", err)
 	} else {
@@ -267,7 +266,7 @@ func main() {
 
 	//13. POST /api/annotation/bulk
 	fmt.Println("Begin to test POST /api/annotation/bulk.")
-	anns := make([]client.Annotation, 0)
+	anns := make([]opentsdb.Annotation, 0)
 	bulkAnnNum := 4
 	i = 0
 	bulkAddBeginST := time.Now().Unix()
@@ -277,10 +276,10 @@ func main() {
 			addedST := time.Now().Unix()
 			addedTsuid := fmt.Sprintf("%s%d", "00000100000100000", i)
 			addedTsuids = append(addedTsuids, addedTsuid)
-			anno := client.Annotation{
+			anno := opentsdb.Annotation{
 				StartTime:   addedST,
 				Tsuid:       addedTsuid,
-				Description: "bluebreezecf test annotation",
+				Description: "opentsdb test annotation",
 				Notes:       "These would be details about the event, the description is just a summary",
 			}
 			anns = append(anns, anno)
@@ -298,7 +297,7 @@ func main() {
 
 	//14. DELETE /api/annotation/bulk
 	fmt.Println("Begin to test DELETE /api/annotation/bulk.")
-	bulkAnnoDelete := client.BulkAnnoDeleteInfo{
+	bulkAnnoDelete := opentsdb.BulkAnnoDeleteInfo{
 		StartTime: bulkAddBeginST,
 		Tsuids:    addedTsuids,
 		Global:    false,
@@ -313,7 +312,7 @@ func main() {
 	//15. GET /api/uid/uidmeta
 	fmt.Println("Begin to test GET /api/uid/uidmeta.")
 	metaQueryParam := make(map[string]string, 0)
-	metaQueryParam["type"] = client.TypeMetrics
+	metaQueryParam["type"] = opentsdb.TypeMetrics
 	metaQueryParam["uid"] = "00003A"
 	if resp, err := tsdbClient.QueryUIDMetaData(metaQueryParam); err != nil {
 		fmt.Printf("Error occurs when querying uidmetadata info: %v", err)
@@ -325,7 +324,7 @@ func main() {
 
 	//16. POST /api/uid/uidmeta
 	fmt.Println("Begin to test POST /api/uid/uidmeta.")
-	uidMetaData := client.UIDMetaData{
+	uidMetaData := opentsdb.UIDMetaData{
 		Uid:         "00002A",
 		Type:        "metric",
 		DisplayName: "System CPU Time",
@@ -339,7 +338,7 @@ func main() {
 
 	//17. DELETE /api/uid/uidmeta
 	fmt.Println("Begin to test DELETE /api/uid/uidmeta.")
-	uidMetaData = client.UIDMetaData{
+	uidMetaData = opentsdb.UIDMetaData{
 		Uid:  "00003A",
 		Type: "metric",
 	}
@@ -355,7 +354,7 @@ func main() {
 	metrics := []string{"sys.cpu.0", "sys.cpu.1", "illegal!character"}
 	tagk := []string{"host"}
 	tagv := []string{"web01", "web02", "web03"}
-	assignParam := client.UIDAssignParam{
+	assignParam := opentsdb.UIDAssignParam{
 		Metric: metrics,
 		Tagk:   tagk,
 		Tagv:   tagv,
@@ -379,9 +378,9 @@ func main() {
 	//20. POST /api/uid/tsmeta
 	fmt.Println("Begin to test POST /api/uid/tsmeta.")
 	custom = make(map[string]string, 0)
-	custom["owner"] = "bluebreezecf"
+	custom["owner"] = "opentsdb"
 	custom["department"] = "paas dep"
-	tsMetaData := client.TSMetaData{
+	tsMetaData := opentsdb.TSMetaData{
 		Tsuid:       "000001000001000001",
 		DisplayName: "System CPU Time for Webserver 01",
 		Custom:      custom,
@@ -395,7 +394,7 @@ func main() {
 
 	//21. DELETE /api/uid/tsmeta
 	fmt.Println("Begin to test DELETE /api/uid/tsmeta.")
-	tsMetaData = client.TSMetaData{
+	tsMetaData = opentsdb.TSMetaData{
 		Tsuid: "000001000001000001",
 	}
 	if resp, err := tsdbClient.DeleteTSMetaData(tsMetaData); err != nil {

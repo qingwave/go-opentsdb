@@ -13,12 +13,12 @@
 // limitations under the License.
 //
 //
-// Package client defines the client and the corresponding
+// package opentsdb defines the client and the corresponding
 // rest api implementaion of OpenTSDB.
 //
 // query.go contains the structs and methods for the implementation of /api/query.
 //
-package client
+package opentsdb
 
 import (
 	"bytes"
@@ -157,6 +157,10 @@ type QueryError struct {
 }
 
 func (e *QueryError) Error() string {
+	return fmt.Sprintf("code=%d,msg=%s", e.Code, e.Message)
+}
+
+func (e *QueryError) String() string {
 	return fmt.Sprintf("code=%d,msg=%s", e.Code, e.Message)
 }
 

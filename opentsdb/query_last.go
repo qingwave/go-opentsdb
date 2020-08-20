@@ -13,13 +13,13 @@
 // limitations under the License.
 //
 //
-// Package client defines the client and the corresponding
+// package opentsdb defines the client and the corresponding
 // rest api implementaion of OpenTSDB.
 //
 // query_last.go contains the structs and methods for the implementation of /api/query/last,
 // which is fully supported since v2.2 of opentsdb.
 //
-package client
+package opentsdb
 
 import (
 	"bytes"

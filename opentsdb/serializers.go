@@ -13,12 +13,12 @@
 // limitations under the License.
 //
 //
-// Package client defines the client and the corresponding
+// package opentsdb defines the client and the corresponding
 // rest api implementaion of OpenTSDB.
 //
 // serializers.go contains the structs and methods for the implementation of /api/serializers.
 //
-package client
+package opentsdb
 
 import (
 	"bytes"
