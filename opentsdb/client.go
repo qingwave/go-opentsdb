@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 //
-// Package client defines the client and the corresponding
+// package opentsdb defines the client and the corresponding
 // rest api implementaion of OpenTSDB.
 //
 // client.go contains the global interface and implementation struct
@@ -21,9 +21,10 @@
 // and public methods used by all the rest-api implementation files,
 // whose names are just like put.go, query.go, and so on.
 //
-package client
+package opentsdb
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -33,8 +34,6 @@ import (
 	"net/http"
 	"strings"
 	"time"
-
-	"github.com/bluebreezecf/opentsdb-goclient/config"
 )
 
 const (
@@ -108,8 +107,8 @@ type Client interface {
 	// This endpoint allows for storing data in OpenTSDB over HTTP as an alternative to the Telnet interface.
 	//
 	// datas is a slice of DataPoint holding at least one instance.
-	// queryParam can only be github.com/bluebreezecf/opentsdb-goclient/client.PutRespWithSummary,
-	// github.com/bluebreezecf/opentsdb-goclient/client.PutRespWithDetails or the empty string "";
+	// queryParam can only be github.com/qingwave/opentsdb-goclient/client.PutRespWithSummary,
+	// github.com/qingwave/opentsdb-goclient/client.PutRespWithDetails or the empty string "";
 	// It means get put summary response info by using PutRespWithSummary, and
 	// with PutRespWithDetails means get put detailed response.
 	//
@@ -398,7 +397,7 @@ type Client interface {
 // pre-defined rest apis of OpenTSDB.
 // A non-nil error instance returned means currently the target OpenTSDB
 // designated with the given endpoint is not connectable.
-func NewClient(opentsdbCfg config.OpenTSDBConfig) (Client, error) {
+func NewClient(opentsdbCfg OpenTSDBConfig) (Client, error) {
 	opentsdbCfg.OpentsdbHost = strings.TrimSpace(opentsdbCfg.OpentsdbHost)
 	if len(opentsdbCfg.OpentsdbHost) <= 0 {
 		return nil, errors.New("The OpentsdbEndpoint of the given config should not be empty.")
@@ -438,7 +437,7 @@ type ClientContext interface {
 	Client
 }
 
-func NewClientContext(opentsdbCfg config.OpenTSDBConfig) (Client, error) {
+func NewClientContext(opentsdbCfg OpenTSDBConfig) (ClientContext, error) {
 	client, err := NewClient(opentsdbCfg)
 	if err != nil {
 		return nil, err
@@ -452,7 +451,7 @@ type clientImpl struct {
 	tsdbEndpoint string
 	client       *http.Client
 	ctx          context.Context
-	opentsdbCfg  config.OpenTSDBConfig
+	opentsdbCfg  OpenTSDBConfig
 }
 
 // Response defines the common behaviours all the specific response for
@@ -491,9 +490,9 @@ func (c *clientImpl) WithContext(ctx context.Context) Client {
 // response with the specific type. Otherwise, the returned error is not nil.
 func (c *clientImpl) sendRequest(method, url, reqBodyCnt string, parsedResp Response) error {
 	req, err := http.NewRequest(method, url, strings.NewReader(reqBodyCnt))
-        if c.ctx != nil {
-          req = req.WithContext(c.ctx)
-        }
+	if c.ctx != nil {
+		req = req.WithContext(c.ctx)
+	}
 	if err != nil {
 		return errors.New(fmt.Sprintf("Failed to create request for %s %s: %v", method, url, err))
 	}
@@ -548,4 +547,35 @@ func (c *clientImpl) Ping() error {
 		defer conn.Close()
 	}
 	return nil
+}
+
+type ConfigResponse struct {
+	StatusCode int
+	Configs    map[string]string `json:"configs"`
+}
+
+func (cfgResp *ConfigResponse) SetStatus(code int) {
+	cfgResp.StatusCode = code
+}
+
+func (cfgResp *ConfigResponse) GetCustomParser() func(respCnt []byte) error {
+	return func(respCnt []byte) error {
+		return json.Unmarshal([]byte(fmt.Sprintf("{%s:%s}", `"Configs"`, string(respCnt))), &cfgResp)
+	}
+}
+
+func (cfgResp *ConfigResponse) String() string {
+	buffer := bytes.NewBuffer(nil)
+	content, _ := json.Marshal(cfgResp)
+	buffer.WriteString(fmt.Sprintf("%s\n", string(content)))
+	return buffer.String()
+}
+
+func (c *clientImpl) Config() (*ConfigResponse, error) {
+	configEndpoint := fmt.Sprintf("%s%s", c.tsdbEndpoint, ConfigPath)
+	cfgResp := ConfigResponse{}
+	if err := c.sendRequest(GetMethod, configEndpoint, "", &cfgResp); err != nil {
+		return nil, err
+	}
+	return &cfgResp, nil
 }
